@@ -6,12 +6,24 @@ pragma solidity ^0.8.30;
 /// @dev Starter code for the assessment. Prefer clarity over cleverness.
 contract Vault {
     // -------------------------------------------------------------------------
+    // Constants
+    // -------------------------------------------------------------------------
+
+    uint256 public constant MAX_WITHDRAWAL_FEE_BPS = 500;
+
+    uint256 private constant BPS_DENOMINATOR = 10_000;
+
+    // -------------------------------------------------------------------------
     // Storage
     // -------------------------------------------------------------------------
 
     address private _owner;
 
     uint256 public totalAssets;
+
+    uint256 public withdrawalFeeBps;
+
+    address public treasury;
 
     mapping(address => uint256) private _balances;
 
@@ -25,12 +37,18 @@ contract Vault {
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
+    event WithdrawalFeeUpdated(uint256 previousFeeBps, uint256 newFeeBps);
+
+    event TreasuryUpdated(address indexed previousTreasury, address indexed newTreasury);
+
     // -------------------------------------------------------------------------
     // Errors
     // -------------------------------------------------------------------------
 
     error Unauthorized();
     error InvalidOwner();
+    error InvalidFee();
+    error InvalidTreasury();
     error ZeroAmount();
     error InsufficientBalance();
     error ETHTransferFailed();
@@ -53,6 +71,7 @@ contract Vault {
 
     constructor() {
         _setOwner(msg.sender);
+        _setTreasury(msg.sender);
     }
 
     /// @notice Accepts direct ETH transfers.
@@ -72,6 +91,36 @@ contract Vault {
         }
 
         _setOwner(newOwner);
+    }
+
+    // -------------------------------------------------------------------------
+    // Fee configuration
+    // -------------------------------------------------------------------------
+
+    /// @notice Sets the withdrawal fee in basis points.
+    function setWithdrawalFee(
+        uint256 feeBps
+    ) external onlyOwner {
+        if (feeBps > MAX_WITHDRAWAL_FEE_BPS) {
+            revert InvalidFee();
+        }
+
+        uint256 previousFeeBps = withdrawalFeeBps;
+
+        withdrawalFeeBps = feeBps;
+
+        emit WithdrawalFeeUpdated(previousFeeBps, feeBps);
+    }
+
+    /// @notice Sets the treasury address that receives withdrawal fees.
+    function setTreasury(
+        address newTreasury
+    ) external onlyOwner {
+        if (newTreasury == address(0)) {
+            revert InvalidTreasury();
+        }
+
+        _setTreasury(newTreasury);
     }
 
     // -------------------------------------------------------------------------
@@ -139,11 +188,18 @@ contract Vault {
             revert InsufficientBalance();
         }
 
+        uint256 feeAmount = (amount * withdrawalFeeBps) / BPS_DENOMINATOR;
+        uint256 userAmount = amount - feeAmount;
+
         _balances[account] = balance - amount;
 
         totalAssets -= amount;
 
-        _transferETH(account, amount);
+        if (feeAmount > 0) {
+            _transferETH(treasury, feeAmount);
+        }
+
+        _transferETH(account, userAmount);
 
         emit Withdrawn(account, amount);
     }
@@ -167,5 +223,15 @@ contract Vault {
         _owner = newOwner;
 
         emit OwnershipTransferred(previousOwner, newOwner);
+    }
+
+    function _setTreasury(
+        address newTreasury
+    ) internal {
+        address previousTreasury = treasury;
+
+        treasury = newTreasury;
+
+        emit TreasuryUpdated(previousTreasury, newTreasury);
     }
 }

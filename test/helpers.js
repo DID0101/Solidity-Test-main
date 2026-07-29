@@ -6,6 +6,9 @@ const THREE_ETH = ethers.parseEther("3");
 const FIVE_ETH = ethers.parseEther("5");
 const TEN_ETH = ethers.parseEther("10");
 
+const BPS_DENOMINATOR = 10_000n;
+const MAX_FEE_BPS = 500n;
+
 async function deployVault() {
   const [owner, alice, bob, treasury] = await ethers.getSigners();
 
@@ -24,13 +27,20 @@ async function withdraw(vault, account, amount) {
   return vault.connect(account).withdraw(amount);
 }
 
+function feeAmount(amount, feeBps) {
+  return (amount * feeBps) / BPS_DENOMINATOR;
+}
+
 module.exports = {
   ONE_ETH,
   TWO_ETH,
   THREE_ETH,
   FIVE_ETH,
   TEN_ETH,
+  BPS_DENOMINATOR,
+  MAX_FEE_BPS,
   deployVault,
   deposit,
   withdraw,
+  feeAmount,
 };
