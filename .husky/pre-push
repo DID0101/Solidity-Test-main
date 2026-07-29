@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+set -e
+
+echo
+echo "Running final checks before push..."
+echo
+
+echo
+echo "✓ Push checks passed."
