@@ -1,0 +1,30 @@
+{
+  "extends": "solhint:recommended",
+  "rules": {
+    "compiler-version": [
+      "error",
+      "^0.8.30"
+    ],
+    "func-visibility": [
+      "error",
+      {
+        "ignoreConstructors": true
+      }
+    ],
+    "ordering": "warn",
+    "reason-string": "off",
+    "max-line-length": [
+      "warn",
+      100
+    ],
+    "quotes": [
+      "error",
+      "double"
+    ],
+    "private-vars-leading-underscore": "off",
+    "not-rely-on-time": "warn",
+    "avoid-low-level-calls": "off",
+    "use-natspec": "off",
+    "gas-indexed-events": "off"
+  }
+}
